@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Transcriber</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #0f1117;
+    color: #e2e8f0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem;
+  }
+
+  h1 {
+    font-size: 1.6rem;
+    font-weight: 600;
+    color: #f8fafc;
+    margin-bottom: 2rem;
+    letter-spacing: -0.02em;
+  }
+
+  /* ---- Upload zone ---- */
+  #upload-zone {
+    width: 100%;
+    max-width: 640px;
+    border: 2px dashed #334155;
+    border-radius: 12px;
+    padding: 3rem 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    background: #1e2535;
+  }
+  #upload-zone:hover, #upload-zone.drag-over {
+    border-color: #6366f1;
+    background: #1e2535cc;
+  }
+  #upload-zone p { color: #94a3b8; font-size: 0.95rem; }
+  #upload-zone strong { color: #c7d2fe; }
+  #file-input { display: none; }
+
+  /* ---- Progress ---- */
+  #progress-section {
+    display: none;
+    width: 100%;
+    max-width: 640px;
+    margin-top: 2rem;
+    background: #1e2535;
+    border-radius: 12px;
+    padding: 1.5rem;
+  }
+  #step-label {
+    font-size: 0.9rem;
+    color: #94a3b8;
+    margin-bottom: 0.75rem;
+  }
+  .progress-bar-bg {
+    background: #0f1117;
+    border-radius: 999px;
+    height: 8px;
+    overflow: hidden;
+  }
+  #progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #6366f1, #818cf8);
+    border-radius: 999px;
+    width: 0%;
+    transition: width 0.4s ease;
+  }
+  #error-box {
+    display: none;
+    margin-top: 1rem;
+    background: #450a0a;
+    border: 1px solid #7f1d1d;
+    border-radius: 8px;
+    padding: 1rem;
+    color: #fca5a5;
+    font-size: 0.85rem;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  /* ---- Transcript ---- */
+  #transcript-section {
+    display: none;
+    width: 100%;
+    max-width: 860px;
+    margin-top: 2rem;
+  }
+  #transcript-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+  }
+  #transcript-header h2 { font-size: 1.1rem; font-weight: 600; color: #f1f5f9; }
+
+  #new-btn {
+    background: #1e2535;
+    border: 1px solid #334155;
+    color: #94a3b8;
+    padding: 0.4rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: background 0.15s, color 0.15s;
+  }
+  #new-btn:hover { background: #334155; color: #e2e8f0; }
+
+  /* ---- Speaker legend ---- */
+  #speakers-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+  }
+  .speaker-chip {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: #1e2535;
+    border-radius: 999px;
+    padding: 0.3rem 0.8rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+  }
+  .speaker-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* ---- Audio player ---- */
+  #audio-player {
+    width: 100%;
+    margin-bottom: 1.5rem;
+    accent-color: #6366f1;
+  }
+
+  /* ---- Segments ---- */
+  #segments {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  .seg {
+    display: grid;
+    grid-template-columns: 5rem 1fr;
+    gap: 0.75rem;
+    padding: 0.6rem 0.75rem;
+    border-radius: 8px;
+    transition: background 0.15s;
+    align-items: baseline;
+  }
+  .seg:hover { background: #1e2535; }
+  .seg-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.15rem;
+    flex-shrink: 0;
+  }
+  .seg-speaker {
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 5rem;
+  }
+  .seg-time {
+    font-size: 0.7rem;
+    color: #475569;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .seg-time:hover { color: #818cf8; }
+  .seg-text {
+    font-size: 0.9rem;
+    line-height: 1.55;
+    color: #cbd5e1;
+  }
+
+  /* ---- Export ---- */
+  #export-row {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1.5rem;
+    flex-wrap: wrap;
+  }
+  .export-btn {
+    background: #1e2535;
+    border: 1px solid #334155;
+    color: #94a3b8;
+    padding: 0.45rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.82rem;
+    transition: background 0.15s, color 0.15s;
+  }
+  .export-btn:hover { background: #334155; color: #e2e8f0; }
+</style>
+</head>
+<body>
+
+<h1>Transcriber</h1>
+
+<!-- Upload -->
+<div id="upload-zone" onclick="document.getElementById('file-input').click()">
+  <p><strong>Klicka eller dra en fil hit</strong></p>
+  <p style="margin-top:0.5rem">MP3, MP4, WAV, M4A, FLAC, OGG, WEBM…</p>
+  <input type="file" id="file-input" accept="audio/*,video/*">
+</div>
+
+<!-- Progress -->
+<div id="progress-section">
+  <div id="step-label">Startar...</div>
+  <div class="progress-bar-bg">
+    <div id="progress-bar"></div>
+  </div>
+  <div id="error-box"></div>
+</div>
+
+<!-- Transcript -->
+<div id="transcript-section">
+  <div id="transcript-header">
+    <h2>Transkribering</h2>
+    <button id="new-btn" onclick="resetUI()">Ny transkribering</button>
+  </div>
+  <div id="speakers-legend"></div>
+  <audio id="audio-player" controls></audio>
+  <div id="segments"></div>
+  <div id="export-row">
+    <button class="export-btn" onclick="exportTxt()">Exportera TXT</button>
+    <button class="export-btn" onclick="exportSrt()">Exportera SRT</button>
+    <button class="export-btn" onclick="exportJson()">Exportera JSON</button>
+  </div>
+</div>
+
+<script>
+  let currentJobId = null;
+  let currentResult = null;
+
+  // ---- Drag & drop ----
+  const zone = document.getElementById('upload-zone');
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) startUpload(file);
+  });
+  document.getElementById('file-input').addEventListener('change', e => {
+    if (e.target.files[0]) startUpload(e.target.files[0]);
+  });
+
+  // ---- Upload ----
+  async function startUpload(file) {
+    zone.style.display = 'none';
+    showProgress('Laddar upp fil...');
+
+    const form = new FormData();
+    form.append('file', file);
+
+    let res;
+    try {
+      res = await fetch('/upload', { method: 'POST', body: form });
+      if (!res.ok) throw new Error(await res.text());
+    } catch (err) {
+      showError('Upload failed: ' + err.message);
+      return;
+    }
+
+    const { job_id } = await res.json();
+    currentJobId = job_id;
+    listenProgress(job_id);
+  }
+
+  // ---- SSE progress ----
+  function listenProgress(jobId) {
+    const es = new EventSource(`/stream/${jobId}`);
+    es.onmessage = e => {
+      const ev = JSON.parse(e.data);
+      if (ev.type === 'progress') {
+        updateProgress(ev.progress, ev.step);
+      } else if (ev.type === 'done') {
+        updateProgress(100, 'Klar!');
+        es.close();
+        loadResults(jobId);
+      } else if (ev.type === 'error') {
+        es.close();
+        showError(ev.error || 'Okänt fel');
+      }
+    };
+    es.onerror = () => {
+      es.close();
+      showError('Tappad anslutning till servern');
+    };
+  }
+
+  // ---- Load results ----
+  async function loadResults(jobId) {
+    let res;
+    try {
+      res = await fetch(`/results/${jobId}`);
+      if (!res.ok) throw new Error(await res.text());
+    } catch (err) {
+      showError('Kunde inte hämta resultat: ' + err.message);
+      return;
+    }
+    currentResult = await res.json();
+    renderTranscript(currentResult, jobId);
+  }
+
+  // ---- Render ----
+  function renderTranscript(data, jobId) {
+    document.getElementById('progress-section').style.display = 'none';
+    const ts = document.getElementById('transcript-section');
+    ts.style.display = 'block';
+
+    // Speaker legend
+    const legend = document.getElementById('speakers-legend');
+    legend.innerHTML = '';
+    for (const [label, spk] of Object.entries(data.speakers)) {
+      const chip = document.createElement('div');
+      chip.className = 'speaker-chip';
+      chip.innerHTML = `<div class="speaker-dot" style="background:${spk.color}"></div><span>${spk.name}</span>`;
+      legend.appendChild(chip);
+    }
+
+    // Audio player
+    const player = document.getElementById('audio-player');
+    player.src = `/audio/${jobId}`;
+
+    // Segments
+    const container = document.getElementById('segments');
+    container.innerHTML = '';
+    for (const seg of data.segments) {
+      const spk = data.speakers[seg.speaker] || { name: seg.speaker, color: '#9ca3af' };
+      const div = document.createElement('div');
+      div.className = 'seg';
+      div.innerHTML = `
+        <div class="seg-meta">
+          <span class="seg-speaker" style="color:${spk.color}">${spk.name}</span>
+          <span class="seg-time" title="Hoppa till">${fmtTime(seg.start)}</span>
+        </div>
+        <div class="seg-text">${escHtml(seg.text)}</div>
+      `;
+      div.querySelector('.seg-time').addEventListener('click', () => {
+        player.currentTime = seg.start;
+        player.play();
+      });
+      container.appendChild(div);
+    }
+  }
+
+  // ---- Progress helpers ----
+  function showProgress(step) {
+    document.getElementById('progress-section').style.display = 'block';
+    document.getElementById('step-label').textContent = step;
+  }
+  function updateProgress(pct, step) {
+    document.getElementById('progress-section').style.display = 'block';
+    document.getElementById('step-label').textContent = step;
+    document.getElementById('progress-bar').style.width = pct + '%';
+  }
+  function showError(msg) {
+    document.getElementById('progress-section').style.display = 'block';
+    const box = document.getElementById('error-box');
+    box.style.display = 'block';
+    box.textContent = msg;
+  }
+
+  // ---- Reset ----
+  function resetUI() {
+    currentJobId = null;
+    currentResult = null;
+    document.getElementById('upload-zone').style.display = 'block';
+    document.getElementById('progress-section').style.display = 'none';
+    document.getElementById('transcript-section').style.display = 'none';
+    document.getElementById('error-box').style.display = 'none';
+    document.getElementById('progress-bar').style.width = '0%';
+    document.getElementById('file-input').value = '';
+  }
+
+  // ---- Utilities ----
+  function fmtTime(s) {
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const ss = Math.floor(s % 60);
+    if (h > 0) return `${h}:${String(m).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+    return `${m}:${String(ss).padStart(2,'0')}`;
+  }
+  function escHtml(t) {
+    return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  // ---- Export ----
+  function download(filename, text, mime='text/plain') {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([text], {type: mime}));
+    a.download = filename;
+    a.click();
+  }
+
+  function exportTxt() {
+    if (!currentResult) return;
+    const { segments, speakers } = currentResult;
+    let out = '';
+    for (const seg of segments) {
+      const name = speakers[seg.speaker]?.name || seg.speaker;
+      out += `[${fmtTime(seg.start)}] ${name}: ${seg.text}\n`;
+    }
+    download('transcript.txt', out);
+  }
+
+  function exportSrt() {
+    if (!currentResult) return;
+    const { segments, speakers } = currentResult;
+    let out = '';
+    segments.forEach((seg, i) => {
+      const name = speakers[seg.speaker]?.name || seg.speaker;
+      out += `${i + 1}\n${toSrtTime(seg.start)} --> ${toSrtTime(seg.end)}\n${name}: ${seg.text}\n\n`;
+    });
+    download('transcript.srt', out);
+  }
+
+  function toSrtTime(s) {
+    const ms = Math.round((s % 1) * 1000);
+    const ss = Math.floor(s % 60);
+    const m = Math.floor((s / 60) % 60);
+    const h = Math.floor(s / 3600);
+    return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(ss).padStart(2,'0')},${String(ms).padStart(3,'0')}`;
+  }
+
+  function exportJson() {
+    if (!currentResult) return;
+    download('transcript.json', JSON.stringify(currentResult, null, 2), 'application/json');
+  }
+</script>
+</body>
+</html>
