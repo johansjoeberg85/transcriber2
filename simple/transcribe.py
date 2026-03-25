@@ -2,8 +2,8 @@
 """
 Simple standalone transcriber – no database, no Celery, no Redis, no Docker.
 
-Pipeline: ffmpeg -> whisper.cpp -> pyannote diarization -> speaker ID via Ollama
-Results stored as JSON in simple/storage/<job_id>/result.json
+Pipeline: ffmpeg -> openai-whisper (Python) -> pyannote diarization -> speaker ID via Ollama
+Results stored as JSON in simple/storage/<job_id>/result.json and simple/output.json
 
 Run from project root:
     python simple/transcribe.py
@@ -104,10 +104,14 @@ def run_pipeline(job_id: str, input_path: str):
 
     try:
         # Lazy imports – heavy ML libs loaded once per process
-        from services.whisper_service import WhisperService
+        import torch
+        import whisper
         from services.diarization_service import DiarizationService
         from services.speaker_id_service import SpeakerIdService
         from services.llm_service import LLMService
+
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        log.info(f"Whisper device: {device}")
 
         # ------------------------------------------------------------------
         # Step 1 – Extract audio to 16 kHz mono WAV
@@ -124,12 +128,20 @@ def run_pipeline(job_id: str, input_path: str):
         _push(job_id, {"type": "progress", "progress": 5, "step": "Ljud extraherat"})
 
         # ------------------------------------------------------------------
-        # Step 2 – Whisper transcription
+        # Step 2 – Whisper transcription (openai-whisper Python package)
         # ------------------------------------------------------------------
         _push(job_id, {"type": "progress", "progress": 7,
+                       "step": "Laddar Whisper-modell..."})
+        model = whisper.load_model("medium", device=device)
+
+        _push(job_id, {"type": "progress", "progress": 10,
                        "step": "Transkriberar med Whisper (kan ta flera minuter)..."})
-        whisper_service = WhisperService()
-        whisper_segments = whisper_service.transcribe(audio_path)
+        raw = model.transcribe(audio_path, language="sv", verbose=False)
+        whisper_segments = [
+            {"start": s["start"], "end": s["end"], "text": s["text"].strip()}
+            for s in raw["segments"]
+            if s["text"].strip()
+        ]
         _push(job_id, {"type": "progress", "progress": 35,
                        "step": f"Transkribering klar – {len(whisper_segments)} segment"})
 
@@ -159,7 +171,6 @@ def run_pipeline(job_id: str, input_path: str):
                        "step": "Identifierar talare – diarization (kan ta lång tid)..."})
 
         # Patch: enable CUDA for pyannote on Windows (original code only checks MPS/Apple)
-        import torch
         diar_svc = DiarizationService()
         pipeline = diar_svc.get_pipeline()
         if torch.cuda.is_available():
@@ -216,9 +227,9 @@ def run_pipeline(job_id: str, input_path: str):
             speakers["UNKNOWN"] = {"name": "Okänd", "color": "#9ca3af"}
 
         result = {"segments": aligned, "speakers": speakers}
-        (job_dir / "result.json").write_text(
-            json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8"
-        )
+        result_json = json.dumps(result, ensure_ascii=False, indent=2)
+        (job_dir / "result.json").write_text(result_json, encoding="utf-8")
+        (Path(__file__).parent / "output.json").write_text(result_json, encoding="utf-8")
 
         _push(job_id, {"type": "progress", "progress": 100, "step": "Klar!"})
         _push(job_id, {"type": "done", "progress": 100, "step": "Klar!"})
