@@ -148,8 +148,6 @@ def run_pipeline(job_id: str, input_path: str):
                        "step": "Identifierar talare – diarization (kan ta lång tid)..."})
         diar_svc = DiarizationService()
         pipeline = diar_svc.get_pipeline()
-        if torch.cuda.is_available():
-            pipeline.to(torch.device("cuda"))
         diarization_segments = diar_svc.diarize(
             audio_path, min_speakers=min_spk, max_speakers=max_spk
         )
