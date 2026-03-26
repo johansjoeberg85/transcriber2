@@ -1,0 +1,15 @@
+# Dependencies for simple/transcribe.py (no Docker, no database, no Redis)
+fastapi
+uvicorn[standard]
+python-multipart
+pydantic-settings
+python-dotenv
+requests
+numpy
+scipy
+torch
+torchaudio
+openai-whisper
+pyannote.audio
+speechbrain
+websockets

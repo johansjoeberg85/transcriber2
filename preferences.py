@@ -52,12 +52,20 @@ def _mask(value: str) -> str:
 
 
 def get_secret(key: str) -> str:
-    """Get a secret value, checking preferences then env vars."""
+    """Get a secret value, checking env vars, settings, then preferences."""
     import os
     # Environment variable takes precedence
     env_val = os.environ.get(key.upper(), "")
-    if env_val and env_val != f"hf_your_token_here":
+    if env_val and env_val != "hf_your_token_here":
         return env_val
-    # Fall back to preferences
+    # Fall back to pydantic settings (reads .env file)
+    try:
+        from config import settings
+        settings_val = getattr(settings, key.lower(), "")
+        if settings_val:
+            return settings_val
+    except Exception:
+        pass
+    # Fall back to preferences.json
     prefs = load_preferences()
     return prefs.get(key, "")

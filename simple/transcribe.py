@@ -12,27 +12,26 @@ Then open http://localhost:8765
 """
 
 import sys
-import os
 from pathlib import Path
 
-# Add project root to path so we can import services/, config.py, preferences.py
 ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(ROOT))
 
-# Load .env from project root before importing services (pydantic-settings needs it)
 try:
     from dotenv import load_dotenv
     load_dotenv(ROOT / ".env")
 except ImportError:
-    pass  # dotenv not installed, rely on real env vars
+    pass
 
 import json
 import logging
+import shutil
 import subprocess
 import threading
 import uuid
+from datetime import datetime
 
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse, FileResponse
 import uvicorn
@@ -46,12 +45,8 @@ STORAGE_DIR.mkdir(exist_ok=True)
 app = FastAPI(title="Transcriber Simple")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
-# ---------------------------------------------------------------------------
-# In-memory job state
-# ---------------------------------------------------------------------------
-
-_jobs: dict[str, dict] = {}          # job_id -> {status, progress, step, error}
-_job_events: dict[str, list] = {}    # job_id -> [SSE event dicts, ...]
+_jobs: dict[str, dict] = {}
+_job_events: dict[str, list] = {}
 
 
 def _push(job_id: str, event: dict):
@@ -63,11 +58,7 @@ def _push(job_id: str, event: dict):
         job["step"] = event["step"]
 
 
-# ---------------------------------------------------------------------------
-# align_segments – copied from tasks/shared.py to avoid Redis import
-# ---------------------------------------------------------------------------
-
-def align_segments(whisper_segments: list[dict], diarization_segments: list[dict]) -> list[dict]:
+def align_segments(whisper_segments, diarization_segments):
     aligned = []
     for ws in whisper_segments:
         ws_start, ws_end = ws["start"], ws["end"]
@@ -88,10 +79,6 @@ def align_segments(whisper_segments: list[dict], diarization_segments: list[dict
     return aligned
 
 
-# ---------------------------------------------------------------------------
-# Pipeline
-# ---------------------------------------------------------------------------
-
 SPEAKER_COLORS = [
     "#6366f1", "#ec4899", "#10b981", "#f59e0b",
     "#3b82f6", "#ef4444", "#8b5cf6", "#14b8a6",
@@ -103,7 +90,6 @@ def run_pipeline(job_id: str, input_path: str):
     job_dir.mkdir(exist_ok=True)
 
     try:
-        # Lazy imports – heavy ML libs loaded once per process
         import torch
         import whisper
         from services.diarization_service import DiarizationService
@@ -113,9 +99,7 @@ def run_pipeline(job_id: str, input_path: str):
         device = "cuda" if torch.cuda.is_available() else "cpu"
         log.info(f"Whisper device: {device}")
 
-        # ------------------------------------------------------------------
-        # Step 1 – Extract audio to 16 kHz mono WAV
-        # ------------------------------------------------------------------
+        # Step 1 – Extract audio
         _push(job_id, {"type": "progress", "progress": 2, "step": "Extraherar ljud..."})
         audio_path = str(job_dir / "audio.wav")
         if Path(input_path).resolve() != Path(audio_path).resolve():
@@ -127,27 +111,20 @@ def run_pipeline(job_id: str, input_path: str):
             )
         _push(job_id, {"type": "progress", "progress": 5, "step": "Ljud extraherat"})
 
-        # ------------------------------------------------------------------
-        # Step 2 – Whisper transcription (openai-whisper Python package)
-        # ------------------------------------------------------------------
-        _push(job_id, {"type": "progress", "progress": 7,
-                       "step": "Laddar Whisper-modell..."})
+        # Step 2 – Whisper
+        _push(job_id, {"type": "progress", "progress": 7, "step": "Laddar Whisper-modell..."})
         model = whisper.load_model("medium", device=device)
-
         _push(job_id, {"type": "progress", "progress": 10,
                        "step": "Transkriberar med Whisper (kan ta flera minuter)..."})
         raw = model.transcribe(audio_path, language="sv", verbose=False)
         whisper_segments = [
             {"start": s["start"], "end": s["end"], "text": s["text"].strip()}
-            for s in raw["segments"]
-            if s["text"].strip()
+            for s in raw["segments"] if s["text"].strip()
         ]
         _push(job_id, {"type": "progress", "progress": 35,
                        "step": f"Transkribering klar – {len(whisper_segments)} segment"})
 
-        # ------------------------------------------------------------------
-        # Step 3 – LLM iterative intro analysis (counts speakers)
-        # ------------------------------------------------------------------
+        # Step 3 – LLM intro analysis
         _push(job_id, {"type": "progress", "progress": 37,
                        "step": "Analyserar presentationsfas med AI..."})
         llm = LLMService()
@@ -164,37 +141,25 @@ def run_pipeline(job_id: str, input_path: str):
             _push(job_id, {"type": "progress", "progress": 40,
                            "step": f"Hittade {min_spk} deltagare ({names_str})"})
 
-        # ------------------------------------------------------------------
-        # Step 4 – Diarization (with CUDA patch for Windows NVIDIA)
-        # ------------------------------------------------------------------
+        # Step 4 – Diarization
         _push(job_id, {"type": "progress", "progress": 42,
                        "step": "Identifierar talare – diarization (kan ta lång tid)..."})
-
-        # Patch: enable CUDA for pyannote on Windows (original code only checks MPS/Apple)
         diar_svc = DiarizationService()
         pipeline = diar_svc.get_pipeline()
         if torch.cuda.is_available():
             pipeline.to(torch.device("cuda"))
-            log.info("Diarization running on CUDA (NVIDIA GPU)")
-        elif not torch.backends.mps.is_available():
-            log.info("Diarization running on CPU")
-
         diarization_segments = diar_svc.diarize(
             audio_path, min_speakers=min_spk, max_speakers=max_spk
         )
         _push(job_id, {"type": "progress", "progress": 65, "step": "Diarization klar"})
 
-        # ------------------------------------------------------------------
-        # Step 5 – Align whisper segments with speaker labels
-        # ------------------------------------------------------------------
+        # Step 5 – Align
         _push(job_id, {"type": "progress", "progress": 67,
                        "step": "Synkroniserar talare med text..."})
         aligned = align_segments(whisper_segments, diarization_segments)
         _push(job_id, {"type": "progress", "progress": 75, "step": "Synkronisering klar"})
 
-        # ------------------------------------------------------------------
-        # Step 6 – Speaker identification (intro LLM + fallback)
-        # ------------------------------------------------------------------
+        # Step 6 – Speaker identification
         _push(job_id, {"type": "progress", "progress": 77, "step": "Identifierar talare..."})
         spk_svc = SpeakerIdService()
         labels = list(set(s["speaker"] for s in aligned if s["speaker"] != "UNKNOWN"))
@@ -214,9 +179,7 @@ def run_pipeline(job_id: str, input_path: str):
                     info["name"] = f"Deltagare {offset + i + 1}"
                 speaker_info[label] = info
 
-        # ------------------------------------------------------------------
-        # Build result JSON
-        # ------------------------------------------------------------------
+        # Build result
         speakers = {}
         for i, (label, info) in enumerate(sorted(speaker_info.items())):
             speakers[label] = {
@@ -231,16 +194,31 @@ def run_pipeline(job_id: str, input_path: str):
         (job_dir / "result.json").write_text(result_json, encoding="utf-8")
         (Path(__file__).parent / "output.json").write_text(result_json, encoding="utf-8")
 
+        # Update meta with completed status
+        meta_path = job_dir / "meta.json"
+        if meta_path.exists():
+            meta = json.loads(meta_path.read_text(encoding="utf-8"))
+            meta["status"] = "completed"
+            meta_path.write_text(json.dumps(meta, ensure_ascii=False), encoding="utf-8")
+
         _push(job_id, {"type": "progress", "progress": 100, "step": "Klar!"})
         _push(job_id, {"type": "done", "progress": 100, "step": "Klar!"})
-        _jobs[job_id]["status"] = "done"
+        _jobs[job_id]["status"] = "completed"
 
     except Exception as e:
         import traceback
         log.error(f"Pipeline failed for {job_id}: {e}\n{traceback.format_exc()}")
         _push(job_id, {"type": "error", "error": str(e)})
-        _jobs[job_id]["status"] = "error"
+        _jobs[job_id]["status"] = "failed"
         _jobs[job_id]["error"] = str(e)
+        meta_path = STORAGE_DIR / job_id / "meta.json"
+        if meta_path.exists():
+            try:
+                meta = json.loads(meta_path.read_text(encoding="utf-8"))
+                meta["status"] = "failed"
+                meta_path.write_text(json.dumps(meta, ensure_ascii=False), encoding="utf-8")
+            except Exception:
+                pass
 
 
 # ---------------------------------------------------------------------------
@@ -248,7 +226,7 @@ def run_pipeline(job_id: str, input_path: str):
 # ---------------------------------------------------------------------------
 
 @app.post("/upload")
-async def upload(file: UploadFile = File(...)):
+async def upload(file: UploadFile = File(...), title: str = Form("")):
     job_id = uuid.uuid4().hex[:8]
     job_dir = STORAGE_DIR / job_id
     job_dir.mkdir(exist_ok=True)
@@ -258,11 +236,81 @@ async def upload(file: UploadFile = File(...)):
     with open(input_path, "wb") as f:
         f.write(await file.read())
 
-    _jobs[job_id] = {"status": "running", "progress": 0, "step": "Startar..."}
+    meta = {
+        "job_id": job_id,
+        "title": title or Path(file.filename).stem,
+        "status": "processing",
+        "created_at": datetime.utcnow().isoformat(),
+    }
+    (job_dir / "meta.json").write_text(json.dumps(meta, ensure_ascii=False), encoding="utf-8")
+
+    _jobs[job_id] = {"status": "processing", "progress": 0, "step": "Startar..."}
     _job_events[job_id] = []
 
     threading.Thread(target=run_pipeline, args=(job_id, input_path), daemon=True).start()
-    return {"job_id": job_id}
+    return {"job_id": job_id, "title": meta["title"]}
+
+
+@app.get("/jobs")
+async def list_jobs():
+    jobs = []
+    for job_dir in sorted(STORAGE_DIR.iterdir(), key=lambda p: p.stat().st_mtime, reverse=True):
+        meta_path = job_dir / "meta.json"
+        if not meta_path.exists():
+            continue
+        try:
+            meta = json.loads(meta_path.read_text(encoding="utf-8"))
+            # Merge with in-memory status if still running
+            if meta["job_id"] in _jobs:
+                mem = _jobs[meta["job_id"]]
+                if mem["status"] in ("processing", "failed"):
+                    meta["status"] = mem["status"]
+            jobs.append(meta)
+        except Exception:
+            continue
+    return jobs
+
+
+@app.get("/jobs/{job_id}")
+async def get_job(job_id: str):
+    meta_path = STORAGE_DIR / job_id / "meta.json"
+    if not meta_path.exists():
+        raise HTTPException(404, "Job not found")
+    meta = json.loads(meta_path.read_text(encoding="utf-8"))
+    if job_id in _jobs:
+        mem = _jobs[job_id]
+        meta["status"] = mem["status"]
+        meta["progress"] = mem.get("progress", 0)
+        meta["step"] = mem.get("step", "")
+    return meta
+
+
+@app.delete("/jobs/{job_id}")
+async def delete_job(job_id: str):
+    job_dir = STORAGE_DIR / job_id
+    if not job_dir.exists():
+        raise HTTPException(404, "Job not found")
+    shutil.rmtree(job_dir)
+    _jobs.pop(job_id, None)
+    _job_events.pop(job_id, None)
+    return {"ok": True}
+
+
+@app.patch("/speakers/{job_id}/{label}")
+async def rename_speaker(job_id: str, label: str, body: dict):
+    result_path = STORAGE_DIR / job_id / "result.json"
+    if not result_path.exists():
+        raise HTTPException(404, "Result not found")
+    result = json.loads(result_path.read_text(encoding="utf-8"))
+    if label not in result["speakers"]:
+        raise HTTPException(404, "Speaker not found")
+    if "name" in body:
+        result["speakers"][label]["name"] = body["name"]
+    if "color" in body:
+        result["speakers"][label]["color"] = body["color"]
+    result_json = json.dumps(result, ensure_ascii=False, indent=2)
+    result_path.write_text(result_json, encoding="utf-8")
+    return result["speakers"][label]
 
 
 @app.get("/stream/{job_id}")
@@ -293,7 +341,7 @@ async def results(job_id: str):
     path = STORAGE_DIR / job_id / "result.json"
     if not path.exists():
         job = _jobs.get(job_id, {})
-        if job.get("status") == "error":
+        if job.get("status") == "failed":
             raise HTTPException(500, job.get("error", "Pipeline failed"))
         raise HTTPException(404, "Results not ready yet")
     return JSONResponse(json.loads(path.read_text(encoding="utf-8")))
@@ -305,6 +353,84 @@ async def audio(job_id: str):
     if not path.exists():
         raise HTTPException(404, "Audio not found")
     return FileResponse(str(path), media_type="audio/wav")
+
+
+@app.post("/live")
+async def create_live(title: str = Form("")):
+    """Create a live-recording job. Browser then streams audio via WebSocket."""
+    job_id = uuid.uuid4().hex[:8]
+    job_dir = STORAGE_DIR / job_id
+    job_dir.mkdir(exist_ok=True)
+
+    meta = {
+        "job_id": job_id,
+        "title": title or "Live-möte",
+        "status": "recording",
+        "created_at": datetime.utcnow().isoformat(),
+    }
+    (job_dir / "meta.json").write_text(json.dumps(meta, ensure_ascii=False), encoding="utf-8")
+    _jobs[job_id] = {"status": "recording", "progress": 0, "step": "Spelar in..."}
+    _job_events[job_id] = []
+
+    return {"job_id": job_id, "title": meta["title"]}
+
+
+@app.websocket("/ws/live/{job_id}")
+async def live_ws(websocket: WebSocket, job_id: str):
+    """Receive binary audio chunks from the browser, then start the pipeline."""
+    await websocket.accept()
+    job_dir = STORAGE_DIR / job_id
+    job_dir.mkdir(exist_ok=True)
+    chunks: list[bytes] = []
+    log.info(f"Live WS connected for job {job_id}")
+
+    try:
+        while True:
+            msg = await websocket.receive()
+
+            if msg["type"] == "websocket.disconnect":
+                break
+
+            if msg.get("bytes"):
+                chunks.append(msg["bytes"])
+
+            elif msg.get("text"):
+                data = json.loads(msg["text"])
+                if data.get("type") == "end":
+                    # Write all received audio to a single file
+                    ext = data.get("mime", "audio/webm").split("/")[-1].split(";")[0]
+                    input_path = str(job_dir / f"input.{ext}")
+                    with open(input_path, "wb") as f:
+                        for chunk in chunks:
+                            f.write(chunk)
+                    log.info(f"Saved {len(chunks)} chunks → {input_path} ({Path(input_path).stat().st_size} bytes)")
+
+                    # Update meta to processing
+                    meta_path = job_dir / "meta.json"
+                    if meta_path.exists():
+                        meta = json.loads(meta_path.read_text(encoding="utf-8"))
+                        meta["status"] = "processing"
+                        meta_path.write_text(json.dumps(meta, ensure_ascii=False), encoding="utf-8")
+                    _jobs[job_id]["status"] = "processing"
+
+                    # Start pipeline in background thread
+                    threading.Thread(
+                        target=run_pipeline,
+                        args=(job_id, input_path),
+                        daemon=True,
+                    ).start()
+
+                    await websocket.send_json({"type": "started", "job_id": job_id})
+                    break
+
+    except WebSocketDisconnect:
+        log.info(f"Live WS disconnected for job {job_id}")
+    except Exception as e:
+        log.error(f"Live WS error for {job_id}: {e}")
+        try:
+            await websocket.send_json({"type": "error", "error": str(e)})
+        except Exception:
+            pass
 
 
 @app.get("/")

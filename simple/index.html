@@ -9,349 +9,941 @@
 
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background: #0f1117;
+    background: #020817;
     color: #e2e8f0;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    padding: 2rem 1rem;
   }
 
-  h1 {
-    font-size: 1.6rem;
+  /* ---- Header ---- */
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    border-bottom: 1px solid rgba(30,41,59,0.5);
+    background: rgba(2,8,23,0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  .header-inner {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .logo-icon {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #7c3aed, #4f46e5);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .logo-icon svg { width: 16px; height: 16px; color: white; }
+  .logo-title {
+    font-size: 1.125rem;
+    font-weight: 700;
+    background: linear-gradient(to right, #a78bfa, #818cf8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-decoration: none;
+  }
+  .logo-sub {
+    font-size: 0.75rem;
+    color: #64748b;
+    font-weight: 500;
+    margin-left: 0.25rem;
+  }
+
+  /* ---- Main content ---- */
+  main {
+    flex: 1;
+    max-width: 1280px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
+  }
+
+  /* ---- Footer ---- */
+  footer {
+    border-top: 1px solid rgba(30,41,59,0.5);
+    padding: 1rem;
+    margin-top: 2.5rem;
+  }
+  .footer-inner {
+    max-width: 1280px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+    color: #475569;
+  }
+  .footer-inner a { color: #64748b; text-decoration: none; transition: color 0.15s; }
+  .footer-inner a:hover { color: #a78bfa; }
+  .footer-sep { margin: 0 0.25rem; }
+
+  /* ---- Buttons ---- */
+  .btn-primary {
+    background: linear-gradient(to right, #7c3aed, #4f46e5);
+    color: white;
+    border: none;
+    padding: 0.6rem 1.25rem;
+    border-radius: 10px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    box-shadow: 0 4px 14px rgba(124,58,237,0.25);
+  }
+  .btn-primary:hover { opacity: 0.9; }
+  .btn-primary:active { transform: scale(0.97); }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .btn-ghost {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    padding: 0.5rem 1rem;
+    border-radius: 10px;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+  .btn-ghost:hover { background: #1e293b; color: white; }
+
+  .btn-icon {
+    background: transparent;
+    border: none;
+    color: #475569;
+    width: 30px; height: 30px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s, color 0.15s;
+    flex-shrink: 0;
+  }
+  .btn-icon:hover { background: rgba(239,68,68,0.1); color: #f87171; }
+  .btn-icon svg { width: 14px; height: 14px; }
+
+  /* ---- View: Jobs list ---- */
+  #view-list { display: block; }
+  #view-transcript { display: none; }
+
+  .list-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+  }
+  .list-header h1 {
+    font-size: 1.25rem;
     font-weight: 600;
     color: #f8fafc;
-    margin-bottom: 2rem;
-    letter-spacing: -0.02em;
   }
 
-  /* ---- Upload zone ---- */
-  #upload-zone {
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    padding: 6rem 1rem;
+  }
+  .empty-icon {
+    width: 80px; height: 80px;
+    margin: 0 auto 1.5rem;
+    border-radius: 16px;
+    background: rgba(30,41,59,0.5);
+    border: 1px solid rgba(51,65,85,0.5);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .empty-icon svg { width: 40px; height: 40px; color: #475569; }
+  .empty-state h3 { font-size: 1.25rem; font-weight: 600; color: #cbd5e1; }
+  .empty-state p { color: #64748b; margin-top: 0.5rem; max-width: 24rem; margin-left: auto; margin-right: auto; font-size: 0.9rem; }
+
+  /* Job rows */
+  #jobs-list { display: flex; flex-direction: column; gap: 0.75rem; }
+
+  .job-row {
+    background: rgba(15,23,42,0.5);
+    border: 1px solid rgba(30,41,59,0.5);
+    border-radius: 12px;
+    transition: border-color 0.15s;
+    display: flex;
+    align-items: center;
+  }
+  .job-row:hover { border-color: rgba(51,65,85,0.5); }
+
+  .job-row-clickable {
+    flex: 1;
+    padding: 1.25rem;
+    cursor: pointer;
+    border-radius: 12px;
+    transition: background 0.15s;
+    min-width: 0;
+  }
+  .job-row-clickable:hover { background: rgba(30,41,59,0.5); }
+
+  .job-title {
+    font-weight: 600;
+    color: white;
+    font-size: 0.95rem;
+    transition: color 0.15s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .job-row:hover .job-title { color: #c4b5fd; }
+
+  .job-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.375rem;
+    font-size: 0.8rem;
+    color: #64748b;
+    flex-wrap: wrap;
+  }
+  .meta-dot { width: 3px; height: 3px; border-radius: 50%; background: #334155; flex-shrink: 0; }
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 500;
+  }
+  .badge-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .badge-processing { background: rgba(245,158,11,0.1); color: #fbbf24; border: 1px solid rgba(245,158,11,0.2); }
+  .badge-processing .badge-dot { background: #fbbf24; animation: pulse 1.5s infinite; }
+  .badge-completed  { background: rgba(16,185,129,0.1); color: #34d399; border: 1px solid rgba(16,185,129,0.2); }
+  .badge-completed .badge-dot  { background: #34d399; }
+  .badge-failed     { background: rgba(239,68,68,0.1);  color: #f87171; border: 1px solid rgba(239,68,68,0.2); }
+  .badge-failed .badge-dot     { background: #f87171; }
+
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  .job-row-actions { padding: 0 0.75rem 0 0; }
+
+  /* ---- Modal ---- */
+  #modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 50;
+    align-items: center;
+    justify-content: center;
+  }
+  #modal-overlay.open { display: flex; }
+
+  .modal-box {
+    background: #0f172a;
+    border: 1px solid rgba(51,65,85,0.5);
+    border-radius: 16px;
+    box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+    padding: 1.5rem;
     width: 100%;
-    max-width: 640px;
+    max-width: 480px;
+    margin: 1rem;
+  }
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+  }
+  .modal-header h2 { font-size: 1.1rem; font-weight: 700; color: white; }
+  .modal-close {
+    background: transparent;
+    border: none;
+    color: #64748b;
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 6px;
+    transition: color 0.15s, background 0.15s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .modal-close:hover { color: white; background: #1e293b; }
+  .modal-close svg { width: 18px; height: 18px; }
+
+  /* Drop zone */
+  #drop-zone {
     border: 2px dashed #334155;
     border-radius: 12px;
-    padding: 3rem 2rem;
+    padding: 2.5rem 1.5rem;
     text-align: center;
     cursor: pointer;
     transition: border-color 0.2s, background 0.2s;
-    background: #1e2535;
+    margin-bottom: 1rem;
   }
-  #upload-zone:hover, #upload-zone.drag-over {
-    border-color: #6366f1;
-    background: #1e2535cc;
+  #drop-zone:hover, #drop-zone.drag-over { border-color: #6366f1; background: rgba(99,102,241,0.05); }
+  #drop-zone.has-file { border-color: rgba(16,185,129,0.5); background: rgba(16,185,129,0.05); }
+  #drop-zone-icon {
+    width: 48px; height: 48px;
+    margin: 0 auto 0.75rem;
+    border-radius: 50%;
+    background: #1e293b;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s;
   }
-  #upload-zone p { color: #94a3b8; font-size: 0.95rem; }
-  #upload-zone strong { color: #c7d2fe; }
+  #drop-zone:hover #drop-zone-icon { background: #334155; }
+  #drop-zone.has-file #drop-zone-icon { background: rgba(16,185,129,0.2); }
+  #drop-zone-icon svg { width: 22px; height: 22px; color: #94a3b8; }
+  #drop-zone.has-file #drop-zone-icon svg { color: #34d399; }
+  #drop-zone-label { color: #cbd5e1; font-weight: 500; font-size: 0.9rem; }
+  #drop-zone-sub { color: #64748b; font-size: 0.8rem; margin-top: 0.25rem; }
   #file-input { display: none; }
 
-  /* ---- Progress ---- */
-  #progress-section {
-    display: none;
+  /* Title input */
+  .field-label { font-size: 0.8rem; font-weight: 500; color: #94a3b8; margin-bottom: 0.375rem; }
+  .text-input {
     width: 100%;
-    max-width: 640px;
-    margin-top: 2rem;
-    background: #1e2535;
-    border-radius: 12px;
-    padding: 1.5rem;
+    background: rgba(15,23,42,0.8);
+    border: 1px solid #1e293b;
+    border-radius: 8px;
+    padding: 0.6rem 0.875rem;
+    color: white;
+    font-size: 0.875rem;
+    outline: none;
+    transition: border-color 0.15s;
+    margin-bottom: 1.25rem;
   }
-  #step-label {
-    font-size: 0.9rem;
+  .text-input:focus { border-color: rgba(99,102,241,0.5); }
+  .text-input::placeholder { color: #475569; }
+
+  .modal-actions { display: flex; justify-content: flex-end; gap: 0.75rem; }
+
+  /* ---- Transcript view ---- */
+  .back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
     color: #94a3b8;
-    margin-bottom: 0.75rem;
+    font-size: 0.875rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.375rem 0;
+    margin-bottom: 1.25rem;
+    transition: color 0.15s;
   }
+  .back-btn:hover { color: white; }
+  .back-btn svg { width: 16px; height: 16px; }
+
+  #transcript-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: white;
+    margin-bottom: 1.5rem;
+  }
+
+  /* Progress */
+  #progress-section {
+    background: #0f172a;
+    border: 1px solid #1e293b;
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+  }
+  #step-label { font-size: 0.85rem; color: #94a3b8; margin-bottom: 0.625rem; }
   .progress-bar-bg {
-    background: #0f1117;
+    background: #020817;
     border-radius: 999px;
-    height: 8px;
+    height: 6px;
     overflow: hidden;
   }
   #progress-bar {
     height: 100%;
-    background: linear-gradient(90deg, #6366f1, #818cf8);
+    background: linear-gradient(90deg, #7c3aed, #818cf8);
     border-radius: 999px;
     width: 0%;
     transition: width 0.4s ease;
   }
   #error-box {
     display: none;
-    margin-top: 1rem;
-    background: #450a0a;
+    margin-top: 0.875rem;
+    background: rgba(69,10,10,0.5);
     border: 1px solid #7f1d1d;
     border-radius: 8px;
-    padding: 1rem;
+    padding: 0.875rem;
     color: #fca5a5;
-    font-size: 0.85rem;
+    font-size: 0.82rem;
     white-space: pre-wrap;
     word-break: break-word;
   }
 
-  /* ---- Transcript ---- */
-  #transcript-section {
-    display: none;
-    width: 100%;
-    max-width: 860px;
-    margin-top: 2rem;
-  }
-  #transcript-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 1rem;
-  }
-  #transcript-header h2 { font-size: 1.1rem; font-weight: 600; color: #f1f5f9; }
+  /* Content layout */
+  #transcript-content { display: none; }
 
-  #new-btn {
-    background: #1e2535;
-    border: 1px solid #334155;
-    color: #94a3b8;
-    padding: 0.4rem 1rem;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 0.85rem;
-    transition: background 0.15s, color 0.15s;
-  }
-  #new-btn:hover { background: #334155; color: #e2e8f0; }
-
-  /* ---- Speaker legend ---- */
+  /* Speaker legend */
   #speakers-legend {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.25rem;
   }
   .speaker-chip {
     display: flex;
     align-items: center;
-    gap: 0.4rem;
-    background: #1e2535;
+    gap: 0.375rem;
+    background: #0f172a;
+    border: 1px solid #1e293b;
     border-radius: 999px;
-    padding: 0.3rem 0.8rem;
-    font-size: 0.8rem;
+    padding: 0.3rem 0.75rem;
+    font-size: 0.78rem;
     font-weight: 500;
+    cursor: pointer;
+    transition: border-color 0.15s;
+    position: relative;
   }
-  .speaker-dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
+  .speaker-chip:hover { border-color: #334155; }
+  .speaker-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .chip-name { color: #cbd5e1; }
 
-  /* ---- Audio player ---- */
+  /* Speaker rename inline */
+  .chip-edit {
+    display: none;
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 0.5rem;
+    gap: 0.375rem;
+    z-index: 10;
+    min-width: 180px;
+    flex-direction: column;
+  }
+  .chip-edit.open { display: flex; }
+  .chip-edit input {
+    background: #0f172a;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    color: white;
+    padding: 0.375rem 0.5rem;
+    font-size: 0.8rem;
+    outline: none;
+    width: 100%;
+  }
+  .chip-edit input:focus { border-color: rgba(99,102,241,0.5); }
+  .chip-edit-btns { display: flex; gap: 0.25rem; }
+  .chip-edit-btns button {
+    flex: 1;
+    font-size: 0.75rem;
+    padding: 0.3rem;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+  }
+  .btn-save-name { background: #4f46e5; color: white; }
+  .btn-save-name:hover { background: #6366f1; }
+  .btn-cancel-name { background: #334155; color: #94a3b8; }
+  .btn-cancel-name:hover { background: #475569; color: white; }
+
+  /* Audio player */
   #audio-player {
     width: 100%;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.25rem;
     accent-color: #6366f1;
   }
 
-  /* ---- Segments ---- */
-  #segments {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-  }
+  /* Segments */
+  #segments { display: flex; flex-direction: column; gap: 0.2rem; }
   .seg {
     display: grid;
-    grid-template-columns: 5rem 1fr;
+    grid-template-columns: 5.5rem 1fr;
     gap: 0.75rem;
-    padding: 0.6rem 0.75rem;
+    padding: 0.55rem 0.75rem;
     border-radius: 8px;
-    transition: background 0.15s;
     align-items: baseline;
+    transition: background 0.15s;
   }
-  .seg:hover { background: #1e2535; }
-  .seg-meta {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 0.15rem;
-    flex-shrink: 0;
-  }
+  .seg:hover { background: #0f172a; }
+  .seg-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 0.1rem; flex-shrink: 0; }
   .seg-speaker {
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     font-weight: 600;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 5rem;
+    max-width: 5.5rem;
   }
   .seg-time {
-    font-size: 0.7rem;
-    color: #475569;
+    font-size: 0.68rem;
+    color: #334155;
     cursor: pointer;
     white-space: nowrap;
+    font-family: monospace;
   }
   .seg-time:hover { color: #818cf8; }
-  .seg-text {
-    font-size: 0.9rem;
-    line-height: 1.55;
-    color: #cbd5e1;
-  }
+  .seg-text { font-size: 0.875rem; line-height: 1.6; color: #cbd5e1; }
 
-  /* ---- Export ---- */
+  /* Export row */
   #export-row {
     display: flex;
     gap: 0.5rem;
     margin-top: 1.5rem;
     flex-wrap: wrap;
+    padding-top: 1.5rem;
+    border-top: 1px solid #0f172a;
   }
   .export-btn {
-    background: #1e2535;
-    border: 1px solid #334155;
+    background: #0f172a;
+    border: 1px solid #1e293b;
     color: #94a3b8;
     padding: 0.45rem 1rem;
-    border-radius: 6px;
+    border-radius: 8px;
     cursor: pointer;
-    font-size: 0.82rem;
-    transition: background 0.15s, color 0.15s;
+    font-size: 0.8rem;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
   }
-  .export-btn:hover { background: #334155; color: #e2e8f0; }
+  .export-btn:hover { background: #1e293b; color: white; border-color: #334155; }
+
+  /* ---- Modal tabs ---- */
+  .modal-tabs {
+    display: flex; background: #1e293b; border-radius: 10px;
+    padding: 3px; margin-bottom: 1.25rem; gap: 2px;
+  }
+  .tab-btn {
+    flex: 1; padding: 0.5rem; border-radius: 7px; border: none;
+    background: transparent; color: #64748b; font-size: 0.85rem;
+    font-weight: 500; cursor: pointer; transition: background 0.15s, color 0.15s;
+  }
+  .tab-btn.active { background: #334155; color: white; }
+
+  /* ---- Recording ---- */
+  .rec-center { text-align: center; padding: 1.5rem 0 1rem; }
+  .rec-btn {
+    width: 72px; height: 72px; border-radius: 50%; border: none; cursor: pointer;
+    background: linear-gradient(135deg, #dc2626, #e11d48);
+    display: flex; align-items: center; justify-content: center; margin: 0 auto 0.75rem;
+    box-shadow: 0 4px 20px rgba(220,38,38,0.35);
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .rec-btn:hover { transform: scale(1.06); box-shadow: 0 6px 26px rgba(220,38,38,0.5); }
+  .rec-btn svg { width: 26px; height: 26px; color: white; }
+  .rec-hint { color: #64748b; font-size: 0.82rem; }
+  .level-bars {
+    display: flex; align-items: flex-end; justify-content: center;
+    gap: 3px; height: 44px; margin-bottom: 0.75rem;
+  }
+  .level-bar {
+    width: 5px; min-height: 3px; border-radius: 3px;
+    background: linear-gradient(to top, #7c3aed, #a78bfa);
+    transition: height 0.08s;
+  }
+  .rec-timer {
+    font-size: 1.5rem; font-weight: 700; font-family: monospace;
+    color: white; display: flex; align-items: center; justify-content: center;
+    gap: 0.5rem; margin-bottom: 1rem;
+  }
+  .rec-dot { width: 10px; height: 10px; border-radius: 50%; background: #ef4444; animation: pulse 1.2s infinite; }
+  .stop-btn {
+    background: #1e293b; border: 1px solid #334155; color: white;
+    padding: 0.5rem 1.25rem; border-radius: 8px; cursor: pointer;
+    font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.5rem;
+    transition: background 0.15s;
+  }
+  .stop-btn:hover { background: #334155; }
+  .stop-btn svg { width: 14px; height: 14px; }
+  .rec-done-icon {
+    width: 48px; height: 48px; border-radius: 50%; margin: 0 auto 0.5rem;
+    background: rgba(16,185,129,0.2); display: flex; align-items: center; justify-content: center;
+  }
+  .rec-done-icon svg { width: 22px; height: 22px; color: #34d399; }
+  .rerecord-btn {
+    background: none; border: none; color: #64748b; font-size: 0.8rem;
+    cursor: pointer; margin-top: 0.5rem; transition: color 0.15s;
+  }
+  .rerecord-btn:hover { color: white; }
 </style>
 </head>
 <body>
 
-<h1>Transcriber</h1>
-
-<!-- Upload -->
-<div id="upload-zone" onclick="document.getElementById('file-input').click()">
-  <p><strong>Klicka eller dra en fil hit</strong></p>
-  <p style="margin-top:0.5rem">MP3, MP4, WAV, M4A, FLAC, OGG, WEBM…</p>
-  <input type="file" id="file-input" accept="audio/*,video/*">
-</div>
-
-<!-- Progress -->
-<div id="progress-section">
-  <div id="step-label">Startar...</div>
-  <div class="progress-bar-bg">
-    <div id="progress-bar"></div>
+<!-- Header -->
+<header>
+  <div class="header-inner">
+    <div class="logo-icon">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+      </svg>
+    </div>
+    <span class="logo-title">Transcriber</span>
+    <span class="logo-sub">AI-powered transcription</span>
   </div>
-  <div id="error-box"></div>
-</div>
+</header>
 
-<!-- Transcript -->
-<div id="transcript-section">
-  <div id="transcript-header">
-    <h2>Transkribering</h2>
-    <button id="new-btn" onclick="resetUI()">Ny transkribering</button>
+<!-- Main -->
+<main>
+
+  <!-- View: Jobs list -->
+  <div id="view-list">
+    <div class="list-header">
+      <h1>Transkribering</h1>
+      <button class="btn-primary" onclick="openModal()">
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+        </svg>
+        Ny transkribering
+      </button>
+    </div>
+
+    <!-- Empty state -->
+    <div id="empty-state" class="empty-state" style="display:none">
+      <div class="empty-icon">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+            d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+        </svg>
+      </div>
+      <h3>Inga transkribering ännu</h3>
+      <p>Ladda upp en ljud- eller videofil för att komma igång.</p>
+    </div>
+
+    <div id="jobs-list"></div>
   </div>
-  <div id="speakers-legend"></div>
-  <audio id="audio-player" controls></audio>
-  <div id="segments"></div>
-  <div id="export-row">
-    <button class="export-btn" onclick="exportTxt()">Exportera TXT</button>
-    <button class="export-btn" onclick="exportSrt()">Exportera SRT</button>
-    <button class="export-btn" onclick="exportJson()">Exportera JSON</button>
+
+  <!-- View: Transcript -->
+  <div id="view-transcript">
+    <button class="back-btn" onclick="showListView()">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+      </svg>
+      Alla transkribering
+    </button>
+
+    <div id="transcript-title"></div>
+
+    <!-- Progress (visible during processing) -->
+    <div id="progress-section" style="display:none">
+      <div id="step-label">Startar...</div>
+      <div class="progress-bar-bg"><div id="progress-bar"></div></div>
+      <div id="error-box"></div>
+    </div>
+
+    <!-- Transcript content (visible when done) -->
+    <div id="transcript-content">
+      <div id="speakers-legend"></div>
+      <audio id="audio-player" controls></audio>
+      <div id="segments"></div>
+      <div id="export-row">
+        <button class="export-btn" onclick="exportTxt()">Exportera TXT</button>
+        <button class="export-btn" onclick="exportSrt()">Exportera SRT</button>
+        <button class="export-btn" onclick="exportJson()">Exportera JSON</button>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- Footer -->
+<footer>
+  <div class="footer-inner">
+    <span>Built by</span>
+    <a href="https://anders.bjarby.com" target="_blank" rel="noreferrer">Anders Bjarby</a>
+    <span class="footer-sep">|</span>
+    <a href="mailto:anders@brattoo.com">anders@brattoo.com</a>
+    <span class="footer-sep">|</span>
+    <a href="https://anders.bjarby.com" target="_blank" rel="noreferrer">anders.bjarby.com</a>
+  </div>
+</footer>
+
+<!-- Upload Modal -->
+<div id="modal-overlay" onclick="handleOverlayClick(event)">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2>Ny transkribering</h2>
+      <button class="modal-close" onclick="closeModal()">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Tabs -->
+    <div class="modal-tabs">
+      <button class="tab-btn active" id="tab-btn-upload" onclick="setTab('upload')">Ladda upp</button>
+      <button class="tab-btn" id="tab-btn-record" onclick="setTab('record')">Spela in</button>
+    </div>
+
+    <!-- Upload tab -->
+    <div id="tab-upload">
+
+    <!-- Drop zone -->
+    <div id="drop-zone" onclick="document.getElementById('file-input').click()">
+      <div id="drop-zone-icon">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+        </svg>
+      </div>
+      <div id="drop-zone-label">Dra och släpp en fil här</div>
+      <div id="drop-zone-sub">eller klicka för att bläddra · MP3, WAV, MP4, M4A, WEBM</div>
+      <input type="file" id="file-input" accept="audio/*,video/*">
+    </div>
+
+    <!-- Title -->
+    <div class="field-label">Titel</div>
+    <input type="text" id="title-input" class="text-input" placeholder="Namnge din transkribering">
+
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeModal()">Avbryt</button>
+      <button class="btn-primary" id="start-btn" onclick="startUpload()" disabled>
+        Starta transkribering
+      </button>
+    </div>
+
+    </div><!-- /tab-upload -->
+
+    <!-- Record tab -->
+    <div id="tab-record" style="display:none">
+
+      <!-- Pre-recording -->
+      <div id="rec-pre" class="rec-center">
+        <div class="field-label" style="text-align:left">Titel</div>
+        <input type="text" id="title-input-rec" class="text-input" placeholder="Namnge inspelningen">
+        <button class="rec-btn" onclick="startRecording()">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+          </svg>
+        </button>
+        <div class="rec-hint">Tryck för att börja spela in</div>
+      </div>
+
+      <!-- Active recording -->
+      <div id="rec-active" style="display:none" class="rec-center">
+        <div class="level-bars" id="level-bars">
+          <div class="level-bar"></div><div class="level-bar"></div><div class="level-bar"></div>
+          <div class="level-bar"></div><div class="level-bar"></div><div class="level-bar"></div>
+          <div class="level-bar"></div><div class="level-bar"></div><div class="level-bar"></div>
+          <div class="level-bar"></div><div class="level-bar"></div><div class="level-bar"></div>
+          <div class="level-bar"></div><div class="level-bar"></div><div class="level-bar"></div>
+          <div class="level-bar"></div>
+        </div>
+        <div class="rec-timer"><span class="rec-dot"></span><span id="rec-timer">00:00</span></div>
+        <button class="stop-btn" onclick="stopRecording()">
+          <svg fill="currentColor" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+          Stoppa inspelning
+        </button>
+      </div>
+
+      <!-- Done -->
+      <div id="rec-post" style="display:none" class="rec-center">
+        <div class="rec-done-icon">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+          </svg>
+        </div>
+        <div style="color:white;font-weight:600">Inspelning klar &middot; <span id="rec-done-time"></span></div>
+        <button class="rerecord-btn" onclick="resetRecording()">Spela in igen</button>
+        <div class="modal-actions" style="margin-top:1rem">
+          <button class="btn-ghost" onclick="closeModal()">Avbryt</button>
+          <button class="btn-primary" id="start-btn-rec" onclick="uploadRecording()">
+            Starta transkribering
+          </button>
+        </div>
+      </div>
+
+    </div><!-- /tab-record -->
+
   </div>
 </div>
 
 <script>
+  // ---- State ----
+  let jobs = [];
   let currentJobId = null;
   let currentResult = null;
+  let activeSSE = null;
+  let selectedFile = null;
+  let pollInterval = null;
 
-  // ---- Drag & drop ----
-  const zone = document.getElementById('upload-zone');
-  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
-  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
-  zone.addEventListener('drop', e => {
-    e.preventDefault();
-    zone.classList.remove('drag-over');
-    const file = e.dataTransfer.files[0];
-    if (file) startUpload(file);
-  });
-  document.getElementById('file-input').addEventListener('change', e => {
-    if (e.target.files[0]) startUpload(e.target.files[0]);
-  });
+  // ---- Init ----
+  fetchJobs();
+  pollInterval = setInterval(() => {
+    if (jobs.some(j => j.status === 'processing')) fetchJobs();
+  }, 5000);
 
-  // ---- Upload ----
-  async function startUpload(file) {
-    zone.style.display = 'none';
-    showProgress('Laddar upp fil...');
-
-    const form = new FormData();
-    form.append('file', file);
-
-    let res;
+  // ---- Jobs list ----
+  async function fetchJobs() {
     try {
-      res = await fetch('/upload', { method: 'POST', body: form });
-      if (!res.ok) throw new Error(await res.text());
-    } catch (err) {
-      showError('Upload failed: ' + err.message);
-      return;
-    }
-
-    const { job_id } = await res.json();
-    currentJobId = job_id;
-    listenProgress(job_id);
+      const res = await fetch('/jobs');
+      if (!res.ok) return;
+      jobs = await res.json();
+      renderJobs();
+    } catch (_) {}
   }
 
-  // ---- SSE progress ----
-  function listenProgress(jobId) {
-    const es = new EventSource(`/stream/${jobId}`);
-    es.onmessage = e => {
+  function renderJobs() {
+    const list = document.getElementById('jobs-list');
+    const empty = document.getElementById('empty-state');
+    if (jobs.length === 0) {
+      list.innerHTML = '';
+      empty.style.display = 'block';
+      return;
+    }
+    empty.style.display = 'none';
+    list.innerHTML = jobs.map(j => `
+      <div class="job-row" id="jobrow-${j.job_id}">
+        <div class="job-row-clickable" onclick="openJob('${j.job_id}')">
+          <div class="job-title">${escHtml(j.title || j.job_id)}</div>
+          <div class="job-meta">
+            <span>${formatDate(j.created_at)}</span>
+            <span class="meta-dot"></span>
+            ${badgeHtml(j.status)}
+          </div>
+        </div>
+        <div class="job-row-actions">
+          <button class="btn-icon" onclick="deleteJob(event,'${j.job_id}')" title="Radera">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function badgeHtml(status) {
+    const map = {
+      processing: ['badge-processing', 'Bearbetar...'],
+      completed:  ['badge-completed',  'Klar'],
+      failed:     ['badge-failed',      'Fel'],
+    };
+    const [cls, label] = map[status] || ['badge-processing', status];
+    return `<span class="status-badge ${cls}"><span class="badge-dot"></span>${label}</span>`;
+  }
+
+  function formatDate(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    return d.toLocaleString('sv-SE', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  }
+
+  // ---- Open job ----
+  async function openJob(jobId) {
+    currentJobId = jobId;
+    currentResult = null;
+
+    const job = jobs.find(j => j.job_id === jobId) || {};
+    showTranscriptView(job.title || jobId);
+
+    if (job.status === 'completed') {
+      await loadResults(jobId);
+    } else if (job.status === 'failed') {
+      showProgressSection();
+      showError(job.error || 'Pipeline misslyckades');
+    } else {
+      showProgressSection();
+      startSSE(jobId);
+    }
+  }
+
+  function showTranscriptView(title) {
+    document.getElementById('view-list').style.display = 'none';
+    document.getElementById('view-transcript').style.display = 'block';
+    document.getElementById('transcript-title').textContent = title || '';
+    document.getElementById('progress-section').style.display = 'none';
+    document.getElementById('transcript-content').style.display = 'none';
+    document.getElementById('error-box').style.display = 'none';
+    document.getElementById('progress-bar').style.width = '0%';
+  }
+
+  function showListView() {
+    if (activeSSE) { activeSSE.close(); activeSSE = null; }
+    document.getElementById('view-transcript').style.display = 'none';
+    document.getElementById('view-list').style.display = 'block';
+    fetchJobs();
+  }
+
+  function showProgressSection() {
+    document.getElementById('progress-section').style.display = 'block';
+    document.getElementById('transcript-content').style.display = 'none';
+  }
+
+  // ---- SSE ----
+  function startSSE(jobId) {
+    if (activeSSE) activeSSE.close();
+    activeSSE = new EventSource(`/stream/${jobId}`);
+    activeSSE.onmessage = e => {
       const ev = JSON.parse(e.data);
       if (ev.type === 'progress') {
         updateProgress(ev.progress, ev.step);
       } else if (ev.type === 'done') {
         updateProgress(100, 'Klar!');
-        es.close();
-        loadResults(jobId);
+        activeSSE.close(); activeSSE = null;
+        loadResults(jobId).then(() => fetchJobs());
       } else if (ev.type === 'error') {
-        es.close();
+        activeSSE.close(); activeSSE = null;
         showError(ev.error || 'Okänt fel');
+        fetchJobs();
       }
     };
-    es.onerror = () => {
-      es.close();
+    activeSSE.onerror = () => {
+      activeSSE.close(); activeSSE = null;
       showError('Tappad anslutning till servern');
     };
   }
 
-  // ---- Load results ----
-  async function loadResults(jobId) {
-    let res;
-    try {
-      res = await fetch(`/results/${jobId}`);
-      if (!res.ok) throw new Error(await res.text());
-    } catch (err) {
-      showError('Kunde inte hämta resultat: ' + err.message);
-      return;
-    }
-    currentResult = await res.json();
-    renderTranscript(currentResult, jobId);
+  function updateProgress(pct, step) {
+    document.getElementById('progress-section').style.display = 'block';
+    document.getElementById('step-label').textContent = step;
+    document.getElementById('progress-bar').style.width = pct + '%';
   }
 
-  // ---- Render ----
+  function showError(msg) {
+    document.getElementById('progress-section').style.display = 'block';
+    const box = document.getElementById('error-box');
+    box.style.display = 'block';
+    box.textContent = msg;
+  }
+
+  // ---- Load results ----
+  async function loadResults(jobId) {
+    try {
+      const res = await fetch(`/results/${jobId}`);
+      if (!res.ok) throw new Error(await res.text());
+      currentResult = await res.json();
+      renderTranscript(currentResult, jobId);
+    } catch (err) {
+      showError('Kunde inte hämta resultat: ' + err.message);
+    }
+  }
+
+  // ---- Render transcript ----
   function renderTranscript(data, jobId) {
     document.getElementById('progress-section').style.display = 'none';
-    const ts = document.getElementById('transcript-section');
-    ts.style.display = 'block';
+    document.getElementById('transcript-content').style.display = 'block';
 
-    // Speaker legend
-    const legend = document.getElementById('speakers-legend');
-    legend.innerHTML = '';
-    for (const [label, spk] of Object.entries(data.speakers)) {
-      const chip = document.createElement('div');
-      chip.className = 'speaker-chip';
-      chip.innerHTML = `<div class="speaker-dot" style="background:${spk.color}"></div><span>${spk.name}</span>`;
-      legend.appendChild(chip);
-    }
+    renderSpeakers(data, jobId);
 
-    // Audio player
-    const player = document.getElementById('audio-player');
-    player.src = `/audio/${jobId}`;
+    document.getElementById('audio-player').src = `/audio/${jobId}`;
 
-    // Segments
     const container = document.getElementById('segments');
     container.innerHTML = '';
+    const player = document.getElementById('audio-player');
     for (const seg of data.segments) {
       const spk = data.speakers[seg.speaker] || { name: seg.speaker, color: '#9ca3af' };
       const div = document.createElement('div');
       div.className = 'seg';
       div.innerHTML = `
         <div class="seg-meta">
-          <span class="seg-speaker" style="color:${spk.color}">${spk.name}</span>
-          <span class="seg-time" title="Hoppa till">${fmtTime(seg.start)}</span>
+          <span class="seg-speaker" style="color:${spk.color}">${escHtml(spk.name)}</span>
+          <span class="seg-time">${fmtTime(seg.start)}</span>
         </div>
         <div class="seg-text">${escHtml(seg.text)}</div>
       `;
@@ -363,33 +955,276 @@
     }
   }
 
-  // ---- Progress helpers ----
-  function showProgress(step) {
-    document.getElementById('progress-section').style.display = 'block';
-    document.getElementById('step-label').textContent = step;
-  }
-  function updateProgress(pct, step) {
-    document.getElementById('progress-section').style.display = 'block';
-    document.getElementById('step-label').textContent = step;
-    document.getElementById('progress-bar').style.width = pct + '%';
-  }
-  function showError(msg) {
-    document.getElementById('progress-section').style.display = 'block';
-    const box = document.getElementById('error-box');
-    box.style.display = 'block';
-    box.textContent = msg;
+  // ---- Speaker legend + rename ----
+  function renderSpeakers(data, jobId) {
+    const legend = document.getElementById('speakers-legend');
+    legend.innerHTML = '';
+    for (const [label, spk] of Object.entries(data.speakers)) {
+      const chip = document.createElement('div');
+      chip.className = 'speaker-chip';
+      chip.title = 'Klicka för att byta namn';
+      chip.innerHTML = `
+        <div class="speaker-dot" style="background:${spk.color}"></div>
+        <span class="chip-name">${escHtml(spk.name)}</span>
+        <div class="chip-edit" id="edit-${label}">
+          <input type="text" value="${escHtml(spk.name)}" placeholder="Nytt namn"
+            onclick="event.stopPropagation()"
+            onkeydown="if(event.key==='Enter') saveName('${jobId}','${label}',this.value)">
+          <div class="chip-edit-btns">
+            <button class="btn-save-name" onclick="event.stopPropagation(); saveName('${jobId}','${label}',this.previousElementSibling.previousElementSibling.value)">Spara</button>
+            <button class="btn-cancel-name" onclick="event.stopPropagation(); closeEdit('${label}')">Avbryt</button>
+          </div>
+        </div>
+      `;
+      chip.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const ed = document.getElementById(`edit-${label}`);
+        const wasOpen = ed.classList.contains('open');
+        // close all others
+        document.querySelectorAll('.chip-edit.open').forEach(el => el.classList.remove('open'));
+        if (!wasOpen) {
+          ed.classList.add('open');
+          ed.querySelector('input').focus();
+          ed.querySelector('input').select();
+        }
+      });
+      legend.appendChild(chip);
+    }
+    // Close edits when clicking elsewhere
+    document.addEventListener('click', () => {
+      document.querySelectorAll('.chip-edit.open').forEach(el => el.classList.remove('open'));
+    }, { once: false });
   }
 
-  // ---- Reset ----
-  function resetUI() {
-    currentJobId = null;
-    currentResult = null;
-    document.getElementById('upload-zone').style.display = 'block';
-    document.getElementById('progress-section').style.display = 'none';
-    document.getElementById('transcript-section').style.display = 'none';
-    document.getElementById('error-box').style.display = 'none';
-    document.getElementById('progress-bar').style.width = '0%';
-    document.getElementById('file-input').value = '';
+  function closeEdit(label) {
+    document.getElementById(`edit-${label}`)?.classList.remove('open');
+  }
+
+  async function saveName(jobId, label, newName) {
+    newName = newName.trim();
+    if (!newName || !currentResult) return;
+    closeEdit(label);
+    try {
+      const res = await fetch(`/speakers/${jobId}/${label}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newName }),
+      });
+      if (!res.ok) return;
+      currentResult.speakers[label].name = newName;
+      renderTranscript(currentResult, jobId);
+    } catch (_) {}
+  }
+
+  // ---- Delete job ----
+  async function deleteJob(e, jobId) {
+    e.stopPropagation();
+    try {
+      await fetch(`/jobs/${jobId}`, { method: 'DELETE' });
+      jobs = jobs.filter(j => j.job_id !== jobId);
+      renderJobs();
+    } catch (_) {}
+  }
+
+  // ---- Tabs ----
+  function setTab(t) {
+    document.getElementById('tab-upload').style.display = t === 'upload' ? 'block' : 'none';
+    document.getElementById('tab-record').style.display = t === 'record' ? 'block' : 'none';
+    document.getElementById('tab-btn-upload').classList.toggle('active', t === 'upload');
+    document.getElementById('tab-btn-record').classList.toggle('active', t === 'record');
+  }
+
+  // ---- Recording state ----
+  let mediaRecorder = null, recChunks = [], recBlob = null;
+  let recSeconds = 0, recTimer = null, recMime = 'audio/webm';
+  let audioCtx = null, analyser = null, animFrame = null, mediaStream = null;
+
+  function fmtRecTime(s) {
+    return String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0');
+  }
+
+  async function startRecording() {
+    try { mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+    catch(e) { alert('Mikrofonbehörighet nekades: ' + e.message); return; }
+
+    recChunks = []; recBlob = null;
+    recMime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm';
+    mediaRecorder = new MediaRecorder(mediaStream, { mimeType: recMime });
+    mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recChunks.push(e.data); };
+    mediaRecorder.onstop = () => {
+      recBlob = new Blob(recChunks, { type: recMime });
+      document.getElementById('rec-active').style.display = 'none';
+      document.getElementById('rec-post').style.display = 'block';
+      document.getElementById('rec-done-time').textContent = fmtRecTime(recSeconds);
+    };
+    mediaRecorder.start(1000);
+
+    audioCtx = new AudioContext();
+    analyser = audioCtx.createAnalyser(); analyser.fftSize = 256;
+    audioCtx.createMediaStreamSource(mediaStream).connect(analyser);
+    animFrame = requestAnimationFrame(updateBars);
+
+    recSeconds = 0;
+    recTimer = setInterval(() => { recSeconds++; document.getElementById('rec-timer').textContent = fmtRecTime(recSeconds); }, 1000);
+
+    document.getElementById('rec-pre').style.display = 'none';
+    document.getElementById('rec-active').style.display = 'block';
+  }
+
+  function stopRecording() {
+    clearInterval(recTimer); cancelAnimationFrame(animFrame);
+    audioCtx?.close(); mediaStream?.getTracks().forEach(t => t.stop());
+    mediaRecorder.stop();
+  }
+
+  function resetRecording() {
+    recBlob = null; recChunks = [];
+    document.getElementById('rec-post').style.display = 'none';
+    document.getElementById('rec-pre').style.display = 'block';
+    document.getElementById('rec-timer').textContent = '00:00';
+  }
+
+  function updateBars() {
+    const data = new Uint8Array(analyser.frequencyBinCount);
+    analyser.getByteFrequencyData(data);
+    const avg = data.reduce((a,b)=>a+b,0) / data.length / 255;
+    document.querySelectorAll('.level-bar').forEach((bar, i) => {
+      const v = Math.max(3, Math.min(40, avg * 55 * (0.5 + Math.sin(Date.now()/180+i)*0.5)));
+      bar.style.height = v + 'px';
+    });
+    animFrame = requestAnimationFrame(updateBars);
+  }
+
+  async function uploadRecording() {
+    if (!recBlob) return;
+    const title = document.getElementById('title-input-rec').value.trim() || 'Inspelning';
+    const btn = document.getElementById('start-btn-rec');
+    btn.disabled = true; btn.textContent = 'Laddar upp...';
+
+    const form = new FormData();
+    form.append('file', recBlob, 'recording.webm');
+    form.append('title', title);
+
+    let res;
+    try {
+      res = await fetch('/upload', { method: 'POST', body: form });
+      if (!res.ok) throw new Error(await res.text());
+    } catch(err) {
+      btn.disabled = false; btn.textContent = 'Starta transkribering';
+      alert('Uppladdning misslyckades: ' + err.message); return;
+    }
+
+    const { job_id } = await res.json();
+    closeModal();
+    btn.textContent = 'Starta transkribering';
+    jobs.unshift({ job_id, title, status: 'processing', created_at: new Date().toISOString() });
+    renderJobs();
+    showTranscriptView(title);
+    currentJobId = job_id;
+    showProgressSection();
+    startSSE(job_id);
+  }
+
+  // ---- Modal ----
+  function openModal() {
+    selectedFile = null;
+    document.getElementById('title-input').value = '';
+    document.getElementById('start-btn').disabled = true;
+    resetDropZone();
+    document.getElementById('modal-overlay').classList.add('open');
+  }
+  function closeModal() {
+    document.getElementById('modal-overlay').classList.remove('open');
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+    clearInterval(recTimer); cancelAnimationFrame(animFrame);
+    audioCtx?.close(); mediaStream?.getTracks().forEach(t => t.stop());
+    mediaRecorder = null; audioCtx = null; analyser = null; mediaStream = null;
+    setTab('upload');
+    resetRecording();
+  }
+  function handleOverlayClick(e) {
+    if (e.target === document.getElementById('modal-overlay')) closeModal();
+  }
+
+  function resetDropZone() {
+    const dz = document.getElementById('drop-zone');
+    dz.classList.remove('has-file', 'drag-over');
+    document.getElementById('drop-zone-label').textContent = 'Dra och släpp en fil här';
+    document.getElementById('drop-zone-sub').textContent = 'eller klicka för att bläddra · MP3, WAV, MP4, M4A, WEBM';
+    document.getElementById('drop-zone-icon').innerHTML = `
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="22" height="22" style="color:#94a3b8">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+      </svg>`;
+  }
+
+  function setDropZoneFile(file) {
+    selectedFile = file;
+    const dz = document.getElementById('drop-zone');
+    dz.classList.add('has-file');
+    document.getElementById('drop-zone-label').textContent = file.name;
+    document.getElementById('drop-zone-sub').textContent = (file.size / 1024 / 1024).toFixed(1) + ' MB';
+    document.getElementById('drop-zone-icon').innerHTML = `
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="22" height="22" style="color:#34d399">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+      </svg>`;
+    if (!document.getElementById('title-input').value) {
+      document.getElementById('title-input').value = file.name.replace(/\.[^/.]+$/, '');
+    }
+    document.getElementById('start-btn').disabled = false;
+  }
+
+  // Drag & drop
+  const dz = document.getElementById('drop-zone');
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+  dz.addEventListener('drop', e => {
+    e.preventDefault();
+    dz.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) setDropZoneFile(file);
+  });
+  document.getElementById('file-input').addEventListener('change', e => {
+    if (e.target.files[0]) setDropZoneFile(e.target.files[0]);
+  });
+
+  // ---- Upload ----
+  async function startUpload() {
+    if (!selectedFile) return;
+    const title = document.getElementById('title-input').value.trim() || selectedFile.name.replace(/\.[^/.]+$/, '');
+    const btn = document.getElementById('start-btn');
+    btn.disabled = true;
+    btn.textContent = 'Laddar upp...';
+
+    const form = new FormData();
+    form.append('file', selectedFile);
+    form.append('title', title);
+
+    let res;
+    try {
+      res = await fetch('/upload', { method: 'POST', body: form });
+      if (!res.ok) throw new Error(await res.text());
+    } catch (err) {
+      btn.disabled = false;
+      btn.textContent = 'Starta transkribering';
+      alert('Uppladdning misslyckades: ' + err.message);
+      return;
+    }
+
+    const { job_id } = await res.json();
+    closeModal();
+    btn.textContent = 'Starta transkribering';
+
+    // Add to jobs list immediately
+    const newJob = { job_id, title, status: 'processing', created_at: new Date().toISOString() };
+    jobs.unshift(newJob);
+    renderJobs();
+
+    // Open transcript view
+    showTranscriptView(title);
+    currentJobId = job_id;
+    showProgressSection();
+    startSSE(job_id);
   }
 
   // ---- Utilities ----
@@ -401,13 +1236,13 @@
     return `${m}:${String(ss).padStart(2,'0')}`;
   }
   function escHtml(t) {
-    return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
   // ---- Export ----
   function download(filename, text, mime='text/plain') {
     const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([text], {type: mime}));
+    a.href = URL.createObjectURL(new Blob([text], { type: mime }));
     a.download = filename;
     a.click();
   }
@@ -429,7 +1264,7 @@
     let out = '';
     segments.forEach((seg, i) => {
       const name = speakers[seg.speaker]?.name || seg.speaker;
-      out += `${i + 1}\n${toSrtTime(seg.start)} --> ${toSrtTime(seg.end)}\n${name}: ${seg.text}\n\n`;
+      out += `${i+1}\n${toSrtTime(seg.start)} --> ${toSrtTime(seg.end)}\n${name}: ${seg.text}\n\n`;
     });
     download('transcript.srt', out);
   }

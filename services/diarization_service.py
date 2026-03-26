@@ -60,7 +60,12 @@ class DiarizationService:
         if max_speakers is not None:
             kwargs["max_speakers"] = max_speakers
 
-        result = pipeline(audio_path, **kwargs)
+        # Load audio ourselves to bypass torchcodec (broken in this env).
+        # pyannote accepts {'waveform': (C, T) tensor, 'sample_rate': int}.
+        waveform, sample_rate = torchaudio.load(audio_path)
+        audio_input = {"waveform": waveform, "sample_rate": sample_rate}
+
+        result = pipeline(audio_input, **kwargs)
 
         # pyannote v4 returns DiarizeOutput with .serialize()
         if hasattr(result, "serialize"):
