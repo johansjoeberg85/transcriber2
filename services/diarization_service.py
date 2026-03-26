@@ -60,9 +60,19 @@ class DiarizationService:
         if max_speakers is not None:
             kwargs["max_speakers"] = max_speakers
 
-        # Load audio ourselves to bypass torchcodec (broken in this env).
+        # Load audio ourselves to bypass torchcodec (broken on Windows without FFmpeg DLLs).
         # pyannote accepts {'waveform': (C, T) tensor, 'sample_rate': int}.
-        waveform, sample_rate = torchaudio.load(audio_path)
+        try:
+            waveform, sample_rate = torchaudio.load(audio_path)
+        except Exception:
+            import soundfile as sf
+            import numpy as np
+            data, sample_rate = sf.read(audio_path, dtype="float32")
+            if data.ndim == 1:
+                data = data[np.newaxis, :]
+            else:
+                data = data.T
+            waveform = torch.from_numpy(data)
         audio_input = {"waveform": waveform, "sample_rate": sample_rate}
 
         result = pipeline(audio_input, **kwargs)
