@@ -1082,6 +1082,8 @@
     document.getElementById('rec-post').style.display = 'none';
     document.getElementById('rec-pre').style.display = 'block';
     document.getElementById('rec-timer').textContent = '00:00';
+    const btn = document.getElementById('start-btn-rec');
+    btn.disabled = false; btn.textContent = 'Starta transkribering';
   }
 
   function updateBars() {
@@ -1130,6 +1132,8 @@
     selectedFile = null;
     document.getElementById('title-input').value = '';
     document.getElementById('start-btn').disabled = true;
+    const btnRec = document.getElementById('start-btn-rec');
+    btnRec.disabled = false; btnRec.textContent = 'Starta transkribering';
     resetDropZone();
     document.getElementById('modal-overlay').classList.add('open');
   }
