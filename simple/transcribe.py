@@ -121,6 +121,8 @@ def run_pipeline(job_id: str, input_path: str):
             {"start": s["start"], "end": s["end"], "text": s["text"].strip()}
             for s in raw["segments"] if s["text"].strip()
         ]
+        del model
+        torch.cuda.empty_cache()
         _push(job_id, {"type": "progress", "progress": 35,
                        "step": f"Transkribering klar – {len(whisper_segments)} segment"})
 
