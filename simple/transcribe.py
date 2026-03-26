@@ -91,13 +91,14 @@ def run_pipeline(job_id: str, input_path: str):
 
     try:
         import torch
-        import whisper
+        from faster_whisper import WhisperModel
         from services.diarization_service import DiarizationService
         from services.speaker_id_service import SpeakerIdService
         from services.llm_service import LLMService
 
         device = "cuda" if torch.cuda.is_available() else "cpu"
-        log.info(f"Whisper device: {device}")
+        compute_type = "float16" if device == "cuda" else "int8"
+        log.info(f"Whisper device: {device}, compute_type: {compute_type}")
 
         # Step 1 – Extract audio
         _push(job_id, {"type": "progress", "progress": 2, "step": "Extraherar ljud..."})
@@ -111,15 +112,15 @@ def run_pipeline(job_id: str, input_path: str):
             )
         _push(job_id, {"type": "progress", "progress": 5, "step": "Ljud extraherat"})
 
-        # Step 2 – Whisper
-        _push(job_id, {"type": "progress", "progress": 7, "step": "Laddar Whisper-modell..."})
-        model = whisper.load_model("medium", device=device)
+        # Step 2 – Whisper (KB-labs Swedish model)
+        _push(job_id, {"type": "progress", "progress": 7, "step": "Laddar KB Whisper-modell..."})
+        model = WhisperModel("KBLab/kb-whisper-large", device=device, compute_type=compute_type)
         _push(job_id, {"type": "progress", "progress": 10,
-                       "step": "Transkriberar med Whisper (kan ta flera minuter)..."})
-        raw = model.transcribe(audio_path, language="sv", verbose=False)
+                       "step": "Transkriberar med KB Whisper (kan ta flera minuter)..."})
+        segments, _ = model.transcribe(audio_path, language="sv")
         whisper_segments = [
-            {"start": s["start"], "end": s["end"], "text": s["text"].strip()}
-            for s in raw["segments"] if s["text"].strip()
+            {"start": s.start, "end": s.end, "text": s.text.strip()}
+            for s in segments if s.text.strip()
         ]
         del model
         torch.cuda.empty_cache()

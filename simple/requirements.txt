@@ -9,7 +9,7 @@ numpy
 scipy
 torch
 torchaudio
-openai-whisper
+faster-whisper
 pyannote.audio
 speechbrain
 websockets
